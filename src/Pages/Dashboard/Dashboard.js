@@ -1,6 +1,6 @@
 import { Navbar } from '../../components'
 import { useState, useEffect } from 'react'
-import { Table, Space, Button, Modal, Form, Input } from 'antd'
+import { Table, Space, Button, Modal, Form, Input, message } from 'antd'
 import { fetchApi } from "../../Common/api"
 
 const Dashboard = () => {
@@ -8,13 +8,31 @@ const Dashboard = () => {
     const [dataSource, setDataSource] = useState([])
     const [visible, setVisible] = useState(false);
     const [recordModal, setRecordModal] = useState();
+    const [modalAction, setModalAction] = useState();
 
     const onFinish = async () => {
         const values = await form.validateFields();
-        fetchApi(`https://nws-management.herokuapp.com/department/${recordModal.id}`, "put", values).then((response) => {
-            getData();
-            setVisible(false)
-        })
+        if (modalAction && modalAction === 'UPDATE') {
+            fetchApi(`https://nws-management.herokuapp.com/department/${recordModal.id}`, "put", values).then((response) => {
+                if (response.statusCode !== 201) {
+                    return message.error(response.message)
+                }
+                getData();
+                setVisible(false)
+                form.resetFields();
+            })
+        }
+        if (modalAction && modalAction === 'CREATE') {
+            fetchApi(`https://nws-management.herokuapp.com/department`, "POST", values).then((response) => {
+                if (response.statusCode !== 201) {
+                    return message.error(response.message)
+                }
+                getData();
+                setVisible(false)
+                form.resetFields();
+            })
+        }
+
     };
 
     useEffect(() => {
@@ -49,6 +67,7 @@ const Dashboard = () => {
                     <Button type="primary" onClick={() => {
                         setRecordModal(text);
                         setVisible(true);
+                        setVisible('UPDATE')
                         form.setFieldsValue(text)
                     }}>Update</Button>
                     <Button type="primary" onClick={() => onDelete(text.id)} danger>
@@ -61,6 +80,12 @@ const Dashboard = () => {
     return (
         <div className="main-panel ps ps--active-y" id="main-panel">
             <Navbar title="Quản lí bộ phận" />
+            <Button type="primary" block onClick={() => {
+                setVisible(true);
+                setModalAction('CREATE');
+            }}>
+                Thêm mới
+            </Button>
             <Table dataSource={dataSource} columns={columns} />;
             <Modal
                 title="Modal"

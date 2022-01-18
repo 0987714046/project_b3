@@ -1,7 +1,8 @@
 import { Navbar } from '../../components'
 import { useState, useEffect } from 'react'
-import { Table, Space, Button, Modal, Form, Input, Select } from 'antd'
+import { Table, Space, Button, Modal, Form, Input, Select, message, Upload, Image } from 'antd'
 import { fetchApi } from "../../Common/api"
+import { PlusOutlined } from "@ant-design/icons";
 const { Option } = Select;
 
 const User = () => {
@@ -11,13 +12,58 @@ const User = () => {
     const [visible, setVisible] = useState(false);
     const [recordModal, setRecordModal] = useState();
     const [idSelectt, setIdSelect] = useState();
+    const [modalAction, setModalAction] = useState();
+    const [imageUrl, setImageUrl] = useState("");
+    const [imageFile, setImageFile] = useState({});
+    const getBase64 = (file, callback) => {
+        const reader = new FileReader();
+        reader.addEventListener("load", () => callback(reader.result));
+        reader.readAsDataURL(file);
+    };
+    const uploadFile = (info) => {
+        console.log('222222222222222222222222', info);
+        setImageFile(info.file);
 
+        if (info.fileList.length) {
+            getBase64(info.file, (imageUrl) => {
+                setImageUrl(imageUrl);
+            });
+        }
+    };
     const onFinish = async () => {
         const values = await form.validateFields();
-        fetchApi(`https://nws-management.herokuapp.com/employee/${recordModal.id}`, "put", values).then((response) => {
-            getData();
-            setVisible(false)
-        })
+        const dataPush = {
+            ...values,
+            photo: imageUrl,
+            image: null
+        }
+        const formData = new FormData();
+        formData.append("nameEmployee", values.nameEmployee);
+        formData.append("photo", imageFile);
+        formData.append("jobTitle", values.jobTitle);
+        formData.append("cellPhone", values.cellPhone);
+        formData.append("email", values.email);
+        formData.append("managerId", values.nameDepartment);
+        if (modalAction && modalAction === 'UPDATE') {
+            fetchApi(`https://nws-management.herokuapp.com/employee/${recordModal.id}`, "put", formData).then((response) => {
+                if (response.statusCode !== 201) {
+                    return message.error(response.message)
+                }
+                getData();
+                setVisible(false)
+                form.resetFields()
+            })
+        }
+        if (modalAction && modalAction === 'CREATE') {
+            fetchApi(`https://nws-management.herokuapp.com/employee`, "POST", formData).then((response) => {
+                if (response.statusCode !== 201) {
+                    return message.error(response.message)
+                }
+                getData();
+                setVisible(false)
+                form.resetFields()
+            })
+        }
     };
     const getDataDepartment = () => {
         fetchApi('https://nws-management.herokuapp.com/department/paginate?page=1&limit=9999').then((response) => {
@@ -68,6 +114,7 @@ const User = () => {
                         setRecordModal(text);
                         setVisible(true);
                         form.setFieldsValue(text)
+                        setModalAction('UPDATE')
                         form.setFieldsValue({ nameDepartment: text.manager.id })
                         setIdSelect(text.manager.id);
                     }}>Update</Button>
@@ -78,10 +125,22 @@ const User = () => {
             ),
         },
     ]
+    const uploadButton = (
+        <div>
+            <PlusOutlined />
+            <div style={{ marginTop: 8 }}>アップロード</div>
+        </div>
+    );
     return (
         <div className="main-panel ps ps--active-y" id="main-panel">
             <Navbar title="Quản lí bộ phận" />
-            <Table dataSource={dataSource} columns={columns} />;
+            <Button type="primary" block onClick={() => {
+                setVisible(true);
+                setModalAction('CREATE');
+            }}>
+                Thêm mới
+            </Button>
+            <Table dataSource={dataSource} columns={columns} />
             <Modal
                 title="Modal"
                 visible={visible}
@@ -159,6 +218,27 @@ const User = () => {
                                 <Option value={element.id} key={element.id}>{element.nameDepartment}</Option>
                             ))}
                         </Select>
+                    </Form.Item>
+                    <Form.Item name="image" label="ảnh">
+                        <Upload
+                            fileList={[]}
+                            maxCount={1}
+                            accept="image/*"
+                            listType="picture-card"
+                            className="avatar-uploader"
+                            onChange={uploadFile}
+                            beforeUpload={() => false}
+                            showUploadList={false}
+                            onRemove={() => setImageUrl("")}
+                        >
+                            {imageUrl.length == 0 && uploadButton}
+                            {imageUrl && <Image
+                                className="menu-img"
+                                src={imageUrl}
+                                preview={false}
+                            />}
+
+                        </Upload>
                     </Form.Item>
                 </Form>
             </Modal>
