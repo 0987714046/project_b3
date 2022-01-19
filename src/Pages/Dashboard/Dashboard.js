@@ -40,7 +40,13 @@ const Dashboard = () => {
     }, [])
     const getData = () => {
         fetchApi('https://nws-management.herokuapp.com/department/paginate?page=1&limit=9999').then((response) => {
-            setDataSource(response.items)
+            const data = response.items.map((element) => {
+                return {
+                    ...element,
+                    key : element.id
+                }
+            })
+            setDataSource(data)
         })
     }
     const onDelete = (id) => {
@@ -86,7 +92,7 @@ const Dashboard = () => {
             }}>
                 Thêm mới
             </Button>
-            <Table dataSource={dataSource} columns={columns} />;
+            <Table rowKey={'id'} dataSource={dataSource} columns={columns} />;
             <Modal
                 title="Modal"
                 visible={visible}

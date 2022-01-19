@@ -67,7 +67,13 @@ const User = () => {
     };
     const getDataDepartment = () => {
         fetchApi('https://nws-management.herokuapp.com/department/paginate?page=1&limit=9999').then((response) => {
-            setDataDepartment(response.items)
+            const data = response.items.map((element) => {
+                return {
+                    ...element,
+                    key: element.id
+                }
+            })
+            setDataDepartment(data)
         })
     }
     useEffect(() => {
@@ -76,7 +82,18 @@ const User = () => {
     }, [])
     const getData = () => {
         fetchApi('https://nws-management.herokuapp.com/employee/paginate?page=1&limit=9999').then((response) => {
-            setDataSource(response.items)
+
+            const data = response.items.map((element) => {
+                const imageName = element.photo.includes('||') ? element.photo.split('\\') : element.photo.split('http://uploads/')
+                const url = imageName[1] ? imageName[1] : imageName[0]
+                const image = imageName[1] ? 'https://nws-management.herokuapp.com/' + url : 'https://nws-management.herokuapp.com/employee/' + url
+                return {
+                    ...element,
+                    key: element.id,
+                    image: image
+                }
+            })
+            setDataSource(data)
         })
     }
     const onDelete = (id) => {
@@ -91,9 +108,13 @@ const User = () => {
             key: 'nameEmployee',
         },
         {
-            title: 'photo',
-            dataIndex: 'photo',
-            key: 'photo',
+            title: 'image',
+            key: 'image',
+            render: (text) => (
+                <>
+                    <Image src={text.image} />
+                </>
+            )
         },
         {
             title: 'jobTitle',
@@ -145,7 +166,7 @@ const User = () => {
             }}>
                 Thêm mới
             </Button>
-            <Table dataSource={dataSource} columns={columns} />
+            <Table rowKey={'id'} dataSource={dataSource} columns={columns} />
             <Modal
                 title="Modal"
                 visible={visible}
