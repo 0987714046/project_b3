@@ -91,6 +91,11 @@ const User = () => {
             key: 'nameEmployee',
         },
         {
+            title: 'photo',
+            dataIndex: 'photo',
+            key: 'photo',
+        },
+        {
             title: 'jobTitle',
             dataIndex: 'jobTitle',
             key: 'jobTitle',
